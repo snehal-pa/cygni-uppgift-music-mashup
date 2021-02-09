@@ -6,9 +6,7 @@ import com.example.music_mashup.service.ApiServices.WikipediaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/rest/artist")
@@ -21,19 +19,24 @@ public class ArtistController {
     @Autowired
     private WikipediaService wikipediaService;
 
-    @GetMapping()
-    public ResponseEntity getArtist(){
-        return ResponseEntity.status(HttpStatus.OK).body(musicBrainzService.getArtistById("qwew"));
+
+    @GetMapping("/{id}")
+    public ResponseEntity getArtist(@PathVariable String id) {
+        var artist = musicBrainzService.getArtistById(id);
+        if (artist == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not found, check if the mbId is correct");
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(artist);
     }
 
-    @GetMapping("/des")
-    public ResponseEntity getDescription(){
-        return ResponseEntity.status(HttpStatus.OK).body(wikidataService.getDescription("Q11649"));
-    }
+//    @GetMapping("/wiki/description")
+//    public ResponseEntity getDescription() {
+//        return ResponseEntity.status(HttpStatus.OK).body(wikidataService.getDescription("Q11649"));
+//    }
 
-    @GetMapping("/wikides")
-    public ResponseEntity wikiDescription(){
-        return ResponseEntity.status(HttpStatus.OK).body(wikipediaService.getDescription("Metallica"));
+    @GetMapping("/wiki/description")
+    public ResponseEntity wikiDescription(@RequestParam String title) {
+        return ResponseEntity.status(HttpStatus.OK).body(wikipediaService.getDescription(title));
     }
 
 

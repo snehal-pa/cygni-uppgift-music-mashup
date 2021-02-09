@@ -1,15 +1,17 @@
 package com.example.music_mashup.service.ApiServices;
 
+import com.example.music_mashup.model.Album;
 import com.example.music_mashup.model.Artist;
+import com.example.music_mashup.thread.MyRunnable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class MusicBrainzService {
@@ -20,11 +22,15 @@ public class MusicBrainzService {
     @Autowired
     private WikipediaService wikipediaService;
 
+    @Autowired
+    private CoverArtArchiveService coverArtArchiveService;
+
     private static final RestTemplate restTemplate = new RestTemplate();
 
     public Artist getArtistById(String id) {
-        String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/5b11f4ce-a62d-471e-81fc-a69a8278c7da?&f\n" +
-                "mt=json&inc=url-rels+release-groups";
+        //5b11f4ce-a62d-471e-81fc-a69a8278c7da
+
+        String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
 
         try {
             var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
@@ -32,19 +38,21 @@ public class MusicBrainzService {
             String name = (String) artistMap.get("name");
             String country = (String) artistMap.get("country");
 
-            List<Map<String, Object>> relations = (List<Map<String, Object>>) artistMap.get("relations");
+            var relations = (List<Map<String, Object>>) artistMap.get("relations");
 
             String description = getDescriptionFromWikidataOrWikipedia(relations);
-            Artist artist = new Artist();
-            artist.setMbId(mbId);
-            artist.setCountry(country);
-            artist.setName(name);
-            artist.setDescription(description);
+
+            var releaseGroups = (List<Map<String, Object>>) artistMap.get("release-groups");
+
+            var albums = getAlbums(releaseGroups);
+
+            Artist artist = new Artist(mbId, name, description, country, albums);
 
             return artist;
 
 
         } catch (Exception e) {
+            //System.err.print(e);
             return null;
         }
 
@@ -64,10 +72,36 @@ public class MusicBrainzService {
             if (wikidata.isPresent()) {
                 var wiki = wikidata.get();
                 var qId = ((Map<String, String>) wiki.get("url")).get("resource").split("/")[4];
-                //return "";
                 return wikidataService.getDescription(qId);
             }
         }
         return null;
+    }
+
+
+    private List<Album> getAlbums(List<Map<String, Object>> releaseGroups) {
+        List<Album> albums = new ArrayList<>();
+        List<Thread> threadList = new ArrayList<>();
+
+        for (Map<String, Object> a : releaseGroups) {
+            String title = (String) a.get("title");
+            String id = (String) a.get("id");
+
+            MyRunnable runnable = new MyRunnable(title, id, albums);
+            Thread thread = new Thread(runnable);
+            threadList.add(thread);
+            thread.start();
+        }
+        threadList.forEach(t -> {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                System.out.println("Interrupted");
+            }
+        });
+        Collections.reverse(albums);
+
+        return albums;
+
     }
 }

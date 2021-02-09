@@ -5,7 +5,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
-import java.util.TreeMap;
 
 @Service
 public class WikipediaService {
@@ -18,12 +17,12 @@ public class WikipediaService {
         try {
             var wikipediaMap = wikipediaRestTemplate.getForObject(wikipediaUrl, Map.class);
 
-            var queryMap = (Map<String,Object>)wikipediaMap.get("query");
-            var pageMap = ((Map<String,Object>)queryMap.get("pages"))
+            var queryMap = (Map<String, Object>) wikipediaMap.get("query");
+            var pageMap = ((Map<String, Object>) queryMap.get("pages"))
                     .entrySet()
-                    .stream().map(o->o.getValue())
+                    .stream().map(o -> o.getValue())
                     .findFirst().get();
-            String description = (String) ((Map<String,Object>)pageMap).get("extract");
+            String description = (String) ((Map<String, Object>) pageMap).get("extract");
             return description;
         } catch (RestClientException e) {
             e.printStackTrace();
