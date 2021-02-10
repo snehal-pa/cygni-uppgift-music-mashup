@@ -7,10 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,32 +26,45 @@ public class MusicBrainzService {
 
     public Artist getArtistById(String id) {
         //5b11f4ce-a62d-471e-81fc-a69a8278c7da
+        try{
+            UUID uuid = UUID.fromString(id);
 
-        String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
+            String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
 
-        try {
-            var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
-            String mbId = (String) artistMap.get("id");
-            String name = (String) artistMap.get("name");
-            String country = (String) artistMap.get("country");
+            try {
+                var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
+                String mbId = (String) artistMap.get("id");
+                String name = (String) artistMap.get("name");
+                String country = (String) artistMap.get("country");
 
-            var relations = (List<Map<String, Object>>) artistMap.get("relations");
+                var relations = (List<Map<String, Object>>) artistMap.get("relations");
 
-            String description = getDescriptionFromWikidataOrWikipedia(relations);
+                String description = getDescriptionFromWikidataOrWikipedia(relations);
 
-            var releaseGroups = (List<Map<String, Object>>) artistMap.get("release-groups");
+                var releaseGroups = (List<Map<String, Object>>) artistMap.get("release-groups");
 
-            var albums = getAlbums(releaseGroups);
+                var albums = getAlbums(releaseGroups);
 
-            Artist artist = new Artist(mbId, name, description, country, albums);
+                Artist artist = new Artist(mbId, name, description, country, albums);
 
-            return artist;
+                return artist;
 
 
-        } catch (Exception e) {
-            //System.err.print(e);
+            } catch (Exception e) {
+
+                // handle the case where string is not artist's mbid
+
+                Artist artist= new Artist("","","","",null);
+                return artist;
+            }
+
+
+        } catch (IllegalArgumentException exception){
+            // handle the case where string is not valid UUID
+
             return null;
         }
+
 
     }
 

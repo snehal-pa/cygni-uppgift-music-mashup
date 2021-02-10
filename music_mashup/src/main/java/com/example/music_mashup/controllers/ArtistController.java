@@ -24,7 +24,10 @@ public class ArtistController {
     public ResponseEntity getArtist(@PathVariable String id) {
         var artist = musicBrainzService.getArtistById(id);
         if (artist == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not found, check if the mbId is correct");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("check if the mbId is correct");
+        }
+        if(artist.getMbId().equals("")){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This is not an artist's mbid");
         }
         return ResponseEntity.status(HttpStatus.OK).body(artist);
     }
