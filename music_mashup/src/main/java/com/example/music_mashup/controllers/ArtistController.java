@@ -1,8 +1,8 @@
 package com.example.music_mashup.controllers;
 
-import com.example.music_mashup.service.ApiServices.MusicBrainzService;
-import com.example.music_mashup.service.ApiServices.WikidataService;
-import com.example.music_mashup.service.ApiServices.WikipediaService;
+import com.example.music_mashup.services.MusicBrainzService;
+import com.example.music_mashup.services.WikidataService;
+import com.example.music_mashup.services.WikipediaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,24 +19,20 @@ public class ArtistController {
     @Autowired
     private WikipediaService wikipediaService;
 
-
+    // http://localhost:8080/rest/artist/ed3f4831-e3e0-4dc0-9381-f5649e9df221  ---> example
     @GetMapping("/{id}")
-    public ResponseEntity getArtist(@PathVariable String id) {
-        var artist = musicBrainzService.getArtistById(id);
+    public ResponseEntity getArtist(@PathVariable String id) {    //5b11f4ce-a62d-471e-81fc-a69a8278c7da
+        var artist = musicBrainzService.getArtistByMbId(id);
         if (artist == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("check if the mbId is correct");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Enter a valid mbid");
         }
-        if(artist.getMbId().equals("")){
+        if (artist.getMbId().equals("")) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("This is not an artist's mbid");
         }
         return ResponseEntity.status(HttpStatus.OK).body(artist);
     }
 
-//    @GetMapping("/wiki/description")
-//    public ResponseEntity getDescription() {
-//        return ResponseEntity.status(HttpStatus.OK).body(wikidataService.getDescription("Q11649"));
-//    }
-
+    // http://localhost:8080/rest/artist/wiki/description?title=Nirvana_(band) ----> example
     @GetMapping("/wiki/description")
     public ResponseEntity wikiDescription(@RequestParam String title) {
         return ResponseEntity.status(HttpStatus.OK).body(wikipediaService.getDescription(title));

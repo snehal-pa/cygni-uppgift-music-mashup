@@ -1,4 +1,4 @@
-package com.example.music_mashup.service.ApiServices;
+package com.example.music_mashup.services;
 
 import com.example.music_mashup.model.Album;
 import com.example.music_mashup.model.Artist;
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class MusicBrainzService {
@@ -19,15 +18,14 @@ public class MusicBrainzService {
     @Autowired
     private WikipediaService wikipediaService;
 
-    @Autowired
-    private CoverArtArchiveService coverArtArchiveService;
 
     private static final RestTemplate restTemplate = new RestTemplate();
 
-    public Artist getArtistById(String id) {
-        //5b11f4ce-a62d-471e-81fc-a69a8278c7da
+    public Artist getArtistByMbId(String id) {
+
         try{
-            UUID uuid = UUID.fromString(id);
+            // checking if mbid is a valid uuid
+            UUID.fromString(id);
 
             String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
 
@@ -39,7 +37,7 @@ public class MusicBrainzService {
 
                 var relations = (List<Map<String, Object>>) artistMap.get("relations");
 
-                String description = getDescriptionFromWikidataOrWikipedia(relations);
+                String description = getDescriptionFromWikidataOrWikipedia(relations,name);
 
                 var releaseGroups = (List<Map<String, Object>>) artistMap.get("release-groups");
 
@@ -53,29 +51,28 @@ public class MusicBrainzService {
             } catch (Exception e) {
 
                 // handle the case where string is not artist's mbid
-
                 Artist artist= new Artist("","","","",null);
                 return artist;
             }
 
 
         } catch (IllegalArgumentException exception){
-            // handle the case where string is not valid UUID
 
+            // handle the case where string is not valid UUID
             return null;
         }
 
 
     }
 
-    private String getDescriptionFromWikidataOrWikipedia(List<Map<String, Object>> relations) {
+    private String getDescriptionFromWikidataOrWikipedia(List<Map<String, Object>> relations,String name) {
         //String description;
         var wikipedia = relations.stream()
                 .filter(o -> o.get("type").equals("wikipedia")).findFirst();
-        // TODO: 07/02/2021
+
         if (wikipedia.isPresent()) {
-            String title = "";
-            return wikipediaService.getDescription(title);
+
+            return wikipediaService.getDescription(name);
         } else {
             var wikidata = relations.stream()
                     .filter(o -> o.get("type").equals("wikidata")).findFirst();
@@ -96,6 +93,8 @@ public class MusicBrainzService {
         for (Map<String, Object> a : releaseGroups) {
             String title = (String) a.get("title");
             String id = (String) a.get("id");
+
+            //using thread for every call to an coverArtArchive api to get image for each album
 
             MyRunnable runnable = new MyRunnable(title, id, albums);
             Thread thread = new Thread(runnable);

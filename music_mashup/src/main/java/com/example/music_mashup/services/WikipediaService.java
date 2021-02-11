@@ -1,4 +1,4 @@
-package com.example.music_mashup.service.ApiServices;
+package com.example.music_mashup.services;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
