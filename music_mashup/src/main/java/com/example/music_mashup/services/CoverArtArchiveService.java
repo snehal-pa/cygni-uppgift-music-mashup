@@ -18,7 +18,7 @@ public class CoverArtArchiveService {
         try {
             var coverArtMap = coverArtTemplate.getForObject(coverArtArchiveUrl, Map.class);
             var images = (List<Map<String, Object>>) coverArtMap.get("images");
-            if(images.isEmpty()){
+            if (images.isEmpty()) {
                 return "";
             }
             return (String) images.get(0).get("image");
@@ -28,7 +28,5 @@ public class CoverArtArchiveService {
             //System.err.println(e);
             return "";
         }
-
-
     }
 }

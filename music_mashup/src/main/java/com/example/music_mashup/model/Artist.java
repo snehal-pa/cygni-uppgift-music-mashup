@@ -16,5 +16,4 @@ public class Artist {
     private String description;
     private String country;
     private List<Album> albums;
-
 }

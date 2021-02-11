@@ -22,8 +22,10 @@ public class ArtistController {
     @Autowired
     private WikipediaService wikipediaService;
 
-    // http://localhost:8080/rest/artist/ed3f4831-e3e0-4dc0-9381-f5649e9df221  ---> example
     @GetMapping("/{id}")
+    // Added rate limit, one request per second because MusicBrainz API
+    // supports only one request per second.
+    // see this: https://musicbrainz.org/doc/MusicBrainz_API#Application_rate_limiting_and_identification
     @RateLimiter(name = "artistRateLimit", fallbackMethod = "artistFallBack")
     public ResponseEntity getArtist(@PathVariable String id) {    //5b11f4ce-a62d-471e-81fc-a69a8278c7da
         var artist = musicBrainzService.getArtistByMbId(id);
@@ -46,6 +48,4 @@ public class ArtistController {
                 .headers(responseHeaders) //send retry header
                 .body("Too many request - No further calls are accepted");
     }
-
-
 }

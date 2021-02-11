@@ -2,14 +2,12 @@ package com.example.music_mashup.services;
 
 import com.example.music_mashup.model.Album;
 import com.example.music_mashup.model.Artist;
-import com.example.music_mashup.thread.MyRunnable;
+import com.example.music_mashup.thread.CoverArtRunnable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -29,19 +27,20 @@ public class MusicBrainzService {
 
     public Artist getArtistByMbId(String id) {
 
-        try{
+        try {
             // checking if mbid is a valid uuid
             UUID.fromString(id);
 
             String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
 
-
             try {
+                // Adding User-Agent header in compliance with MusicBrainz APIs documentation
+                // See this: https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting#Provide_meaningful_User-Agent_strings
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("User-Agent", "music_mashup/0.0.1 (snehal.kathiriya@gmail.com)");
                 HttpEntity entity = new HttpEntity(headers);
 
-                var artistMap = restTemplate.exchange(musicBrainzUrl, HttpMethod.GET,entity,Map.class).getBody();
+                var artistMap = restTemplate.exchange(musicBrainzUrl, HttpMethod.GET, entity, Map.class).getBody();
                 //var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
                 String mbId = (String) artistMap.get("id");
                 String name = (String) artistMap.get("name");
@@ -49,7 +48,7 @@ public class MusicBrainzService {
 
                 var relations = (List<Map<String, Object>>) artistMap.get("relations");
 
-                String description = getDescriptionFromWikidataOrWikipedia(relations,name);
+                String description = getDescriptionFromWikidataOrWikipedia(relations, name);
 
                 var releaseGroups = (List<Map<String, Object>>) artistMap.get("release-groups");
 
@@ -63,21 +62,19 @@ public class MusicBrainzService {
             } catch (Exception e) {
 
                 // handle the case where string is not artist's mbid
-                Artist artist= new Artist("","","","",null);
+                Artist artist = new Artist("", "", "", "", null);
                 return artist;
             }
 
 
-        } catch (IllegalArgumentException exception){
+        } catch (IllegalArgumentException exception) {
 
             // handle the case where string is not valid UUID
             return null;
         }
-
-
     }
 
-    private String getDescriptionFromWikidataOrWikipedia(List<Map<String, Object>> relations,String name) {
+    private String getDescriptionFromWikidataOrWikipedia(List<Map<String, Object>> relations, String name) {
         //String description;
         var wikipedia = relations.stream()
                 .filter(o -> o.get("type").equals("wikipedia")).findFirst();
@@ -106,9 +103,10 @@ public class MusicBrainzService {
             String title = (String) a.get("title");
             String id = (String) a.get("id");
 
-            //using thread for every call to an coverArtArchive api to get image for each album
-
-            MyRunnable runnable = new MyRunnable(title, id, albums);
+            // Using thread for every call to coverArtArchive api to get image for each album
+            // because otherwise it would take very long time to get the URLs for all albums.
+            // E.g. observed response time up to 40s during testing without threads.
+            CoverArtRunnable runnable = new CoverArtRunnable(title, id, albums);
             Thread thread = new Thread(runnable);
             threadList.add(thread);
             thread.start();
@@ -123,6 +121,5 @@ public class MusicBrainzService {
         Collections.reverse(albums);
 
         return albums;
-
     }
 }
