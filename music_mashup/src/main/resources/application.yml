@@ -1,0 +1,10 @@
+resilience4j:
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 1
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0
+    instances:
+      artistRateLimit:
+        baseConfig: default

@@ -4,7 +4,12 @@ import com.example.music_mashup.model.Album;
 import com.example.music_mashup.model.Artist;
 import com.example.music_mashup.thread.MyRunnable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -21,6 +26,7 @@ public class MusicBrainzService {
 
     private static final RestTemplate restTemplate = new RestTemplate();
 
+
     public Artist getArtistByMbId(String id) {
 
         try{
@@ -29,8 +35,14 @@ public class MusicBrainzService {
 
             String musicBrainzUrl = "http://musicbrainz.org/ws/2/artist/" + id + "?&fmt=json&inc=url-rels+release-groups";
 
+
             try {
-                var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
+                HttpHeaders headers = new HttpHeaders();
+                headers.set("User-Agent", "music_mashup/0.0.1 (snehal.kathiriya@gmail.com)");
+                HttpEntity entity = new HttpEntity(headers);
+
+                var artistMap = restTemplate.exchange(musicBrainzUrl, HttpMethod.GET,entity,Map.class).getBody();
+                //var artistMap = restTemplate.getForObject(musicBrainzUrl, Map.class);
                 String mbId = (String) artistMap.get("id");
                 String name = (String) artistMap.get("name");
                 String country = (String) artistMap.get("country");
